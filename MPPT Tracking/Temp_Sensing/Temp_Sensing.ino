@@ -1,62 +1,59 @@
-#include <SPI.h>
-#include <Melopero_AMG8833.h>
+#include <Wire.h>
+#include <Adafruit_AMG88xx.h>
 
-Melopero_AMG8833 Temp_Sensor;
-// Testing Commit to Git
-//2nd
-//3rd
+Adafruit_AMG88xx Temp_Sensor;
+float pixels[AMG88xx_PIXEL_ARRAY_SIZE];
+float Temp_Avg;
 
 void Temp_Setup()
 {
-  // Register Temp_Sensor Object as slave device for I2C bus
-    Temp_Sensor.initI2C();
-
-    // After Initialization, reset sensor and set FPS (Frames per second) to max of the camera (10Hz)
-    Serial.print("Resetting sensor ... ");  
-    int statusCode = Temp_Sensor.resetFlagsAndSettings();
-    Serial.println(Temp_Sensor.getErrorDescription(statusCode));
-
-    Serial.print("Setting FPS ... ");
-    statusCode = Temp_Sensor.setFPSMode(FPS_MODE::FPS_10);
-    Serial.println(Temp_Sensor.getErrorDescription(statusCode));
+  status = Temp_Sensor.begin();
+  if (!status) 
+  {
+  Serial.println("Could not find a valid AMG88xx sensor, check wiring!");
+  while (1); 
+  }
 }
 
-void I2C_Setup()
+void Process_Temp()
 {
-  //Begin I2C connection
-  Wire.begin();
+  //Update Pixel Array
+  Temp_Sensor.readPixels(pixels)
+
+  //Serial Print Pixel Array
+  Serial.print("[");
+  for(int i=1; i<=AMG88xx_PIXEL_ARRAY_SIZE; i++){
+    Temp_Avg += pixels[i-1]
+    Serial.print(pixels[i-1]);
+    Serial.print(", ");
+    if( i%8 == 0 ) Serial.println();
+  }
+  Serial.println("]");
+  Serial.println();
+
+  // Average Temp of Pixels in view
+  Temp_Avg = Temp_Avg / (AMG88xx_PIXEL_ARRAY_SIZE);
+  Temp_Avg = 0;
 }
 
+float Read_Ambient_Temp()
+{ 
+  // Updates internal temp sensor reading and returns value
+  return Temp_Sensor.readThermistor();
+}
 
 
 // Setting up drivers for Adafruit 3538 AMG8833 IR Thermal Camera
 
-void setup() {
-  Serial.begin(9600);
+void setup() 
+{
 
+  Serial.begin(9600);
+  Temp_Setup();
 }
 
-void loop() {
-  Serial.print("Updating thermistor temperature ... ");
-  int statusCode = Temp_Sensor.updateThermistorTemperature();
-  Serial.println(Temp_Sensor.getErrorDescription(statusCode));
-
-  Serial.print("Updating pixel matrix ... ");
-  statusCode = Temp_Sensor.updatePixelMatrix();
-  Serial.println(Temp_Sensor.getErrorDescription(statusCode));
-
-  Serial.print("Thermistor temp: ");
-  Serial.print(Temp_Sensor.thermistorTemperature);
-  Serial.println("°C");
-
-  Serial.println("Temperature Matrix: ");
-  for (int x = 0; x < 8; x++){
-    for (int y = 0; y < 8; y++){
-      Serial.print(Temp_Sensor.pixelMatrix[y][x]);
-      Serial.print(" ");
-    }
-    Serial.println();
-  }
-
+void loop() 
+{
+  Process_Temp();
   delay(1000);
 }
