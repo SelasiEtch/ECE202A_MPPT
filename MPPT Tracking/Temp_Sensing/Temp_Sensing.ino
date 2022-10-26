@@ -5,7 +5,11 @@ Adafruit_AMG88xx Temp_Sensor;
 float pixels[AMG88xx_PIXEL_ARRAY_SIZE];
 float Temp_Avg;
 
-//#define TEST_AMBIENT // Preproccessor directive 
+// To see data from all IR camera pixels, comment out '#define TEST_AMBIENT' and comment '#define TEST_PIXELS_AVG'
+// To see the average aggregate temperature of all IR camera pixels, comment out '#define TEST_AMBIENT' and uncomment '#define TEST_PIXELS_AVG'
+// To see temperature value from on-board thermistor, uncomment '#define TEST_AMBIENT'
+
+//#define TEST_AMBIENT
 #define TEST_PIXELS_AVG
 
 void Temp_Setup()
@@ -28,6 +32,7 @@ void Process_Temp_Pixels()
   //Serial Print Pixel Array
   Serial.print("[");
   for(int i=1; i<=AMG88xx_PIXEL_ARRAY_SIZE; i++){
+    pixels[i-1] = (pixels[i-1] * 1.8) + 32;
     Temp_Avg += pixels[i-1];
     Serial.print(pixels[i-1]);
     Serial.print(", ");
@@ -35,10 +40,6 @@ void Process_Temp_Pixels()
   }
   Serial.println("]");
   Serial.println();
-
-  // Average Temp of Pixels in view
-  Temp_Avg = Temp_Avg / (AMG88xx_PIXEL_ARRAY_SIZE);
-  Temp_Avg = 0;
 }
 
 void Process_Temp_Pixels_Average()
@@ -46,6 +47,7 @@ void Process_Temp_Pixels_Average()
   //Update Pixel Array
   Temp_Sensor.readPixels(pixels);
   for(int i=1; i<=AMG88xx_PIXEL_ARRAY_SIZE; i++){
+    pixels[i-1] = (pixels[i-1] * 1.8) + 32;
     Temp_Avg += pixels[i-1];
   }
 
@@ -58,7 +60,7 @@ void Process_Temp_Pixels_Average()
 float Read_Ambient_Temp()
 { 
   // Updates internal temp sensor reading and returns value
-  return Temp_Sensor.readThermistor();
+  return ((Temp_Sensor.readThermistor()*1.8) + 32);
 }
 
 
