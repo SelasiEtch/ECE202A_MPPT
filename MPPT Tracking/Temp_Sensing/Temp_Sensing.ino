@@ -5,6 +5,8 @@ Adafruit_AMG88xx Temp_Sensor;
 float pixels[AMG88xx_PIXEL_ARRAY_SIZE];
 float Temp_Avg;
 
+// Max Range of IR Camera is 32°F to 176°F
+
 // To see data from all IR camera pixels, comment out '#define TEST_AMBIENT' and comment '#define TEST_PIXELS_AVG'
 // To see the average aggregate temperature of all IR camera pixels, comment out '#define TEST_AMBIENT' and uncomment '#define TEST_PIXELS_AVG'
 // To see temperature value from on-board thermistor, uncomment '#define TEST_AMBIENT'
