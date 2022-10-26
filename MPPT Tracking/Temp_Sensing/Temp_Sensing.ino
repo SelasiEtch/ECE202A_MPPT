@@ -5,8 +5,12 @@ Adafruit_AMG88xx Temp_Sensor;
 float pixels[AMG88xx_PIXEL_ARRAY_SIZE];
 float Temp_Avg;
 
+//#define TEST_AMBIENT // Preproccessor directive 
+#define TEST_PIXELS_AVG
+
 void Temp_Setup()
 {
+  bool status;
   status = Temp_Sensor.begin();
   if (!status) 
   {
@@ -15,15 +19,16 @@ void Temp_Setup()
   }
 }
 
-void Process_Temp()
+void Process_Temp_Pixels()
 {
+
   //Update Pixel Array
-  Temp_Sensor.readPixels(pixels)
+  Temp_Sensor.readPixels(pixels);
 
   //Serial Print Pixel Array
   Serial.print("[");
   for(int i=1; i<=AMG88xx_PIXEL_ARRAY_SIZE; i++){
-    Temp_Avg += pixels[i-1]
+    Temp_Avg += pixels[i-1];
     Serial.print(pixels[i-1]);
     Serial.print(", ");
     if( i%8 == 0 ) Serial.println();
@@ -33,6 +38,20 @@ void Process_Temp()
 
   // Average Temp of Pixels in view
   Temp_Avg = Temp_Avg / (AMG88xx_PIXEL_ARRAY_SIZE);
+  Temp_Avg = 0;
+}
+
+void Process_Temp_Pixels_Average()
+{
+  //Update Pixel Array
+  Temp_Sensor.readPixels(pixels);
+  for(int i=1; i<=AMG88xx_PIXEL_ARRAY_SIZE; i++){
+    Temp_Avg += pixels[i-1];
+  }
+
+  // Average Temp of Pixels in view
+  Temp_Avg = Temp_Avg / (AMG88xx_PIXEL_ARRAY_SIZE);
+  Serial.println(Temp_Avg);
   Temp_Avg = 0;
 }
 
@@ -54,6 +73,21 @@ void setup()
 
 void loop() 
 {
-  Process_Temp();
+
+#ifndef TEST_AMBIENT
+  #ifndef TEST_PIXELS_AVG
+    Process_Temp_Pixels();
+  #endif
+  #ifdef TEST_PIXELS_AVG
+    Process_Temp_Pixels_Average();
+  #endif
+#endif
+
+#ifdef TEST_AMBIENT  
+  float temp;
+  temp = Read_Ambient_Temp();
+  Serial.println(temp);
+#endif
+
   delay(1000);
 }
