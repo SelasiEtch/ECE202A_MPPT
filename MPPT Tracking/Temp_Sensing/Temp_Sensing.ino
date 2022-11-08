@@ -12,7 +12,7 @@ float Temp_Avg;
 // To see temperature value from on-board thermistor, uncomment '#define TEST_AMBIENT'
 
 //#define TEST_AMBIENT
-#define TEST_PIXELS_AVG
+//#define TEST_PIXELS_AVG
 
 void Temp_Setup()
 {
@@ -93,5 +93,5 @@ void loop()
   Serial.println(temp);
 #endif
 
-  delay(1000);
+  //delay(1000);
 }
