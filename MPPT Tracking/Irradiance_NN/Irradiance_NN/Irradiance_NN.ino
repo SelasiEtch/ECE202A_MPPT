@@ -187,7 +187,7 @@ void Trained_Irradiation_NN_step(void)
    *  Constant: '<S7>/IW{1,1}(10,:)''
    */
   tmp_0 += Trained_Irradiation_NN_P.IW1110_Value[1] * rtb_Addminy_d;
-
+  
   /* Bias: '<S23>/Add min y' incorporates:
    *  Bias: '<S23>/Subtract min x'
    *  Constant: '<Root>/x1'
