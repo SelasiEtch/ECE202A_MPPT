@@ -28,6 +28,7 @@ uint8_t sense[3];
 float irr_est;
 float Vmp;
 float Imp;
+float Pmp;
 float Temp;
 
 int Gref = 1000;
@@ -53,31 +54,9 @@ void setup()
 
 void loop() 
 {
-    Voltage_Sense = analogRead(V_SENSE_PIN);
-    Current_Sense = analogRead(I_SENSE_PIN);
-    Update_Temp_Average();
-
-    sense[0] = (uint8_t)Voltage_Sense;
-    sense[1] = (uint8_t)Current_Sense;
-    sense[2] = (uint8_t)Temp_Sense;
-    Serial.write((uint8_t*)sense,sizeof(sense));
-    Serial.write("\r\n");
-
-    if (Serial.available() > 0) 
-    {
-      irr_est = (10* Serial.read());
-      Imp = calculate_Imp(irr_est, Temp_Sense);
-      Vmp = calculate_Vmp(Temp_Sense);
-      Pmp = Vmp * Imp;
-      digitalWrite(LED_BUILTIN, HIGH);
-      delay(500);
-      digitalWrite(LED_BUILTIN, LOW);
-      delay(500);
-    }
-
-  Current_Setpoint = Imp;
-  myPID.run();
-  analogWrite(PWM_PIN, outputVal);
+  UpdateSensorData();
+  RunNN();
+  runPID();
 }
 
 float calculate_Imp(double irr_est, double Temp)
@@ -116,5 +95,42 @@ void Update_Temp_Average()
   // Average Temp of Pixels in view
   Temp_Sense = Temp_Avg_dummy / (AMG88xx_PIXEL_ARRAY_SIZE);
   Temp_Avg_dummy= 0;
+}
+
+void UpdateSensorData()
+{
+    Voltage_Sense = analogRead(V_SENSE_PIN);
+    Current_Sense = analogRead(I_SENSE_PIN);
+    Update_Temp_Average();
+}
+
+void RunNN()
+{
+    sense[0] = (uint8_t)Voltage_Sense;
+    sense[1] = (uint8_t)Current_Sense;
+    sense[2] = (uint8_t)Temp_Sense;
+    Serial.write((uint8_t*)sense,sizeof(sense));
+    Serial.write("\r\n");
+
+    while(Serial.available() == 0);
+
+      if (Serial.available() > 0) 
+    {
+      irr_est = (10* Serial.read());
+      Imp = calculate_Imp(irr_est, Temp_Sense);
+      Vmp = calculate_Vmp(Temp_Sense);
+      Pmp = Vmp * Imp;
+      digitalWrite(LED_BUILTIN, HIGH);
+      delay(500);
+      digitalWrite(LED_BUILTIN, LOW);
+      delay(500);
+    }
+}
+
+void runPID()
+{
+  Current_Setpoint = Imp;
+  myPID.run();
+  analogWrite(PWM_PIN, outputVal);
 }
 
