@@ -9,7 +9,7 @@
 #define ADC_RES               1024
 #define ADC_REF               3.3
 #define FB_RATIO_VOLT         0.25
-#define FB_RATIO_CURR         1.65
+#define FB_RATIO_CURR         0.85
 // A0 is current Sensing Pin
 // A3 is Output Voltage Sensing
 // A1 is pot sensing pin 
@@ -90,13 +90,13 @@ void loop()
   */
 
   
-  //UpdatePot_DC();
+  UpdatePot_DC();
   
 
   Serial.write((uint8_t*)sense,sizeof(sense));
   Serial.write("\r\n");
 
-
+/*
   while(Serial.available() == 0);
 
   if (Serial.available() > 0) 
@@ -105,59 +105,15 @@ void loop()
     Imp = calculate_Imp(irr_est, SENSE_TEMP);
     Vmp = calculate_Vmp(SENSE_TEMP);
     Pmp = Vmp * Imp;
-    Setpoint = Vmp;
+    Setpoint = Imp;
     UpdatePID();
     digitalWrite(LED_BUILTIN, HIGH);
     digitalWrite(LED_BUILTIN, LOW);
   }
-
+*/
   delay(100);
 }
 
-void Pert_Obs()
-{
-  SenseOutput_Voltage();
-  SenseOutput_Current();
-  POWER_PREV = SENSE_POWER;
-
-  SENSE_POWER = sense_v_loop * sense_i_loop;
-  DELTA_POWER = SENSE_POWER - POWER_PREV;
-
-  DELTA_VOLT = sense_v_loop - VOLT_PREV;
-  if(DELTA_POWER !=0 || DELTA_VOLT != 0)
-  {
-    if(DELTA_POWER > 0)
-    {
-      if(DELTA_VOLT < 0)
-      {
-        duty++;
-      }
-      else
-      {
-        duty--;
-      }
-    }
-    else
-    {
-      if(DELTA_VOLT < 0)
-      {
-        duty--;
-      }
-      else
-      {
-        duty++;
-      }
-    }
-  }
-  else
-  {
-    duty = duty;
-  }
-  duty_2 = duty / 100;
-  
-  pwmPin.write(duty_2);
-
-}
 
 void Temp_Setup()
 {
@@ -217,8 +173,8 @@ void UpdatePot_DC()
 void UpdatePID()
 {
   //Input = SENSE_VOLT;
-  Input = sense_v_loop;
-  //Input = sense_i_loop;
+  //Input = sense_v_loop;
+  Input = sense_i_loop;
   myPID.Compute();
   DC = (Output / 255);
   pwmPin.write(DC);
