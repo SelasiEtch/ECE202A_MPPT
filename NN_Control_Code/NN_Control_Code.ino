@@ -8,31 +8,21 @@
 #define PWM_FREQUENCY         31000
 #define ADC_RES               1024
 #define ADC_REF               3.3
-#define FB_RATIO_VOLT         0.25
-#define FB_RATIO_CURR         0.85
+//#define FB_RATIO_VOLT         0.25
+#define FB_RATIO_VOLT         0.5
+#define FB_RATIO_CURR         0.8
 // A0 is current Sensing Pin
 // A3 is Output Voltage Sensing
+// A2 is input voltage sensing
 // A1 is pot sensing pin 
-uint8_t sense[3];
+uint8_t sense[4];
 float irr_est;
-
-float duty = 0;
-float duty_2 = 0;
-
 float POT_VOLT = 0;
-
-float SENSE_VOLT = 0;
+float SENSE_VOLT_PV = 0;
+float SENSE_VOLT_OUT = 0;
 float sense_v_loop = 0;
 float sense_i_loop = 0;
-float SENSE_CURR = 0;
-float SENSE_POWER = 0;
-float DELTA_POWER = 0;
-float VOLT_PREV = 0;
-float POWER_PREV = 0;
-float DELTA_VOLT = 0;
-
 float DC = 0;
-
 float Imp = 0;
 float Vmp = 0;
 float Pmp = 0;
@@ -40,7 +30,6 @@ float Pmp = 0;
 
 double Setpoint, Input, Output;
 double Kp=13, Ki=200, Kd=0;
-//double Kp=100, Ki=100, Kd=0;
 PID myPID(&Input, &Output, &Setpoint, Kp, Ki, Kd, DIRECT);
 mbed::PwmOut pwmPin(digitalPinToPinName(PWM_PIN));
 
@@ -48,21 +37,23 @@ Adafruit_AMG88xx Temp_Sensor;
 float pixels[AMG88xx_PIXEL_ARRAY_SIZE];
 float SENSE_TEMP;
 
+//#define CLOSED_LOOP
+
 void setup() 
 {
-  // put your setup code here, to run once:
+  Temp_Setup();
+
   pinMode(PWM_PIN, OUTPUT);
   pinMode(DIRECTION_PIN, OUTPUT);
   pinMode(A0,INPUT);
   pinMode(A1,INPUT);
   pinMode(A3, INPUT);
+
   digitalWrite(DIRECTION_PIN, HIGH);
   pwmPin.period( 1.0 / PWM_FREQUENCY );
   pwmPin.write( 0.1 );
-  //pinMode(A0, OUTPUT);
   Serial.begin(115200);
   myPID.SetMode(AUTOMATIC);
-  Temp_Setup();
 
   Setpoint = 3;
 }
@@ -76,27 +67,13 @@ void loop()
   sense[0] = (uint8_t)SENSE_VOLT;
   sense[1] = (uint8_t)SENSE_CURR;
   sense[2] = (uint8_t)SENSE_TEMP;
+  sense[3] = (uint8_t)Output;
 
-
-  /*
-  Serial.print("Sense Voltage: ");
-  Serial.println(sense_v_loop);
-  Serial.print("Sense Current: ");
-  Serial.println(sense_i_loop);
-  Serial.print("Sense Temp: ");
-  Serial.println(SENSE_TEMP);
-  Serial.print("Duty Cycle: ");
-  Serial.println(DC);
-  */
-
-  
-  UpdatePot_DC();
-  
 
   Serial.write((uint8_t*)sense,sizeof(sense));
   Serial.write("\r\n");
 
-/*
+#ifdef CLOSED_LOOP
   while(Serial.available() == 0);
 
   if (Serial.available() > 0) 
@@ -110,10 +87,14 @@ void loop()
     digitalWrite(LED_BUILTIN, HIGH);
     digitalWrite(LED_BUILTIN, LOW);
   }
-*/
+#endif
+
+#ifndef CLOSED_LOOP
+  UpdatePot_DC();
+#endif
+
   delay(100);
 }
-
 
 void Temp_Setup()
 {
@@ -121,7 +102,6 @@ void Temp_Setup()
   status = Temp_Sensor.begin();
   if (!status) 
   {
-  //Serial.println("Could not find a valid AMG88xx sensor, check wiring!");
   while (1); 
   }
 }
@@ -132,25 +112,21 @@ void Process_Temp_Pixels_Average()
   SENSE_TEMP = 0;
   Temp_Sensor.readPixels(pixels);
   for(int i=1; i<=AMG88xx_PIXEL_ARRAY_SIZE; i++){
-    //pixels[i-1] = (pixels[i-1] * 1.8) + 32;
     SENSE_TEMP += pixels[i-1];
   }
-
   // Average Temp of Pixels in view
   SENSE_TEMP = SENSE_TEMP / (AMG88xx_PIXEL_ARRAY_SIZE);
 }
 
 void SenseOutput_Voltage()
 {
-  VOLT_PREV = SENSE_VOLT;
-
-  SENSE_VOLT = analogRead(A3);
-  sense_v_loop = SENSE_VOLT;
-  SENSE_VOLT = SENSE_VOLT / 4;
+  SENSE_VOLT_OUT = analogRead(A3);
+  SENSE_VOLT_PV = analogRead(A2);
+  sense_v_loop = SENSE_VOLT_PV;
+  SENSE_VOLT_PV = SENSE_VOLT_PV / 4;
+  SENSE_VOLT_OUT = SENVE_VOLT_OUT / 4; 
   sense_v_loop = (sense_v_loop / ADC_RES)*(ADC_REF);
   sense_v_loop = (sense_v_loop / FB_RATIO_VOLT);
-  //SENSE_VOLT = ( (float)(SENSE_VOLT) / (float)(ADC_RES))*((float)(ADC_REF));
-  //SENSE_VOLT = ((float)(SENSE_VOLT) / (float)(FB_RATIO_VOLT));
 }
 
 void SenseOutput_Current()
@@ -159,9 +135,7 @@ void SenseOutput_Current()
   sense_i_loop = SENSE_CURR;
   SENSE_CURR = SENSE_CURR / 4;
   sense_i_loop = (sense_i_loop / ADC_RES)*(ADC_REF);
-  //SENSE_CURR = ((float)(SENSE_CURR) / (float)(ADC_RES))*((float)(ADC_REF));
   sense_i_loop = sense_i_loop / FB_RATIO_CURR;
-  //SENSE_CURR = (float)(SENSE_CURR) / (float)(FB_RATIO_CURR);
 }
 
 void UpdatePot_DC()
@@ -170,16 +144,14 @@ void UpdatePot_DC()
   DC = (POT_VOLT / 1024);
   pwmPin.write(DC);
 }
+
 void UpdatePID()
 {
-  //Input = SENSE_VOLT;
-  //Input = sense_v_loop;
-  Input = sense_i_loop;
+  Input = sense_i_loop; // Loop closed on current measurement
   myPID.Compute();
   DC = (Output / 255);
   pwmPin.write(DC);
 }
-
 
 float calculate_Imp(double irr_est, double Temp)
 {
