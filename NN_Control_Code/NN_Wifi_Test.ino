@@ -2,6 +2,14 @@
 #include <PID_v1.h>
 #include <Wire.h>
 #include <Adafruit_AMG88xx.h>
+#include <SPI.h>
+#include <WiFi.h>
+
+char ssid[] = "CXNK003E0507";        // your network SSID (name)
+char pass[] = "1aace5f91bba533c";    // your network password (use for WPA, or use as key for WEP)
+
+int status = WL_IDLE_STATUS;
+WiFiServer server(80);
 
 #define PWM_PIN               12
 #define DIRECTION_PIN        11
