@@ -15,11 +15,12 @@
 // A3 is Output Voltage Sensing
 // A2 is input voltage sensing
 // A1 is pot sensing pin 
-uint8_t sense[4];
+uint8_t sense[5];
 float irr_est;
 float POT_VOLT = 0;
 float SENSE_VOLT_PV = 0;
 float SENSE_VOLT_OUT = 0;
+float SENSE_CURR = 0;
 float sense_v_loop = 0;
 float sense_i_loop = 0;
 float DC = 0;
@@ -64,10 +65,16 @@ void loop()
   SenseOutput_Current();
   Process_Temp_Pixels_Average();
   
-  sense[0] = (uint8_t)SENSE_VOLT;
+  sense[0] = (uint8_t)SENSE_VOLT_PV;
   sense[1] = (uint8_t)SENSE_CURR;
   sense[2] = (uint8_t)SENSE_TEMP;
   sense[3] = (uint8_t)Output;
+  sense[4] = (uint8_t)SENSE_VOLT_OUT;
+
+#ifndef CLOSED_LOOP
+  sense[3] = (uint8_t)(DC * (225));
+  UpdatePot_DC();
+#endif
 
 
   Serial.write((uint8_t*)sense,sizeof(sense));
@@ -89,9 +96,6 @@ void loop()
   }
 #endif
 
-#ifndef CLOSED_LOOP
-  UpdatePot_DC();
-#endif
 
   delay(100);
 }
@@ -124,7 +128,7 @@ void SenseOutput_Voltage()
   SENSE_VOLT_PV = analogRead(A2);
   sense_v_loop = SENSE_VOLT_PV;
   SENSE_VOLT_PV = SENSE_VOLT_PV / 4;
-  SENSE_VOLT_OUT = SENVE_VOLT_OUT / 4; 
+  SENSE_VOLT_OUT = SENSE_VOLT_OUT / 4; 
   sense_v_loop = (sense_v_loop / ADC_RES)*(ADC_REF);
   sense_v_loop = (sense_v_loop / FB_RATIO_VOLT);
 }
