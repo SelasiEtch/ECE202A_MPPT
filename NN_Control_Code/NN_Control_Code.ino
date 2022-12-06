@@ -9,7 +9,7 @@
 #define ADC_RES               1024
 #define ADC_REF               3.3
 //#define FB_RATIO_VOLT         0.25
-#define FB_RATIO_VOLT         0.5
+#define FB_RATIO_VOLT         0.16
 #define FB_RATIO_CURR         0.8
 // A0 is current Sensing Pin
 // A3 is Output Voltage Sensing
@@ -38,7 +38,7 @@ Adafruit_AMG88xx Temp_Sensor;
 float pixels[AMG88xx_PIXEL_ARRAY_SIZE];
 float SENSE_TEMP;
 
-//#define CLOSED_LOOP
+#define CLOSED_LOOP
 
 void setup() 
 {
