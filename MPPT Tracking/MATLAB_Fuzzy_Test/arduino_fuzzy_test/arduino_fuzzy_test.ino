@@ -1,3 +1,23 @@
+#include "mbed.h"
+#include <PID_v1.h>
+#include <Wire.h>
+#include <Adafruit_AMG88xx.h>
+
+#define PWM_PIN               12
+#define DIRECTION_PIN        11
+#define PWM_FREQUENCY         31000
+#define ADC_RES               1024
+#define ADC_REF               3.3
+//#define FB_RATIO_VOLT         0.25
+#define FB_RATIO_VOLT         0.16
+#define FB_RATIO_CURR         0.8
+// A0 is current Sensing Pin
+// A3 is Output Voltage Sensing
+// A2 is input voltage sensing
+// A1 is pot sensing pin 
+
+mbed::PwmOut pwmPin(digitalPinToPinName(PWM_PIN));
+
 union BtoF
 {
   byte b[16];
@@ -14,6 +34,8 @@ float ERROR_PREV = 0;
 float DELTA_VOLT = 0;
 float DELTA_POWER = 0;
 float DELTA_ERROR = 0;
+
+float POWER_PREV = 0;
 
 
 float VOLT_PREV = 0;
@@ -35,6 +57,7 @@ void loop()
   if (Serial.available()>0)
   {
     myVal = readFromMatlab();
+    pwmPin.write(myVal);
     delay(0.1);
     writeToMatlab(ERROR, DELTA_ERROR);
   }
