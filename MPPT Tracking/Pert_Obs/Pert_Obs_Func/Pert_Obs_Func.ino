@@ -48,18 +48,20 @@ void setup()
   //pinMode(A0, OUTPUT);
   Serial.begin(115200);
   //myPID.SetMode(AUTOMATIC);
-
+  duty = 50;
 }
 
 void loop() // 
 {
-    Pert_Obs();
+  Pert_Obs();
   Serial.print("Sense Voltage: ");
   Serial.println(sense_v_loop);
   Serial.print("Sense Current: ");
   Serial.println(sense_i_loop);
   Serial.print("PV Power: ");
   Serial.println(SENSE_POWER);
+  Serial.print("Duty Cycle: ");
+  Serial.println(duty_2);
   
   
   delay(300);
@@ -74,28 +76,44 @@ void Pert_Obs()
   DELTA_POWER = SENSE_POWER - POWER_PREV;
 
   DELTA_VOLT = SENSE_VOLT - VOLT_PREV;
-  if(DELTA_POWER !=0 || DELTA_VOLT != 0)
+  if(DELTA_POWER != 0 || DELTA_VOLT != 0)
   {
     if(DELTA_POWER > 0)
     {
       if(DELTA_VOLT < 0)
       {
-        duty++;
+        duty--;
+        if(duty < 0)
+        {
+          duty = 0;
+        }
       }
       else
       {
-        duty--;
+        duty++;
+        if(duty > 100)
+        {
+          duty = 100;
+        }
       }
     }
     else
     {
       if(DELTA_VOLT < 0)
       {
-        duty--;
+        duty++;
+        if(duty > 100)
+        {
+          duty = 100;
+        }
       }
       else
       {
-        duty++;
+        duty--;
+        if(duty < 0)
+        {
+          duty = 0;
+        }
       }
     }
   }
