@@ -5,7 +5,8 @@
 
 #define PWM_PIN               12
 #define DIRECTION_PIN        11
-#define PWM_FREQUENCY         31000
+//#define PWM_FREQUENCY         31000
+#define PWM_FREQUENCY         10000
 #define ADC_RES               1024
 #define ADC_REF               3.3
 //#define FB_RATIO_VOLT         0.25
