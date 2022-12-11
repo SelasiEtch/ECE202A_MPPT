@@ -34,10 +34,14 @@ float DELTA_VOLT = 0;
 
 float DC = 0;
 
+// PID Setup
+
 double Setpoint, Input, Output;
 double Kp=13, Ki=100, Kd=0;
 PID myPID(&Input, &Output, &Setpoint, Kp, Ki, Kd, DIRECT);
 mbed::PwmOut pwmPin(digitalPinToPinName(PWM_PIN));
+
+// Temperature Sensing
 
 Adafruit_AMG88xx Temp_Sensor;
 float pixels[AMG88xx_PIXEL_ARRAY_SIZE];
@@ -45,8 +49,11 @@ float SENSE_TEMP;
 
 void Pert_Obs()
 {
+  // Sensing Parameters are fetched
   SenseOutput_Voltage();
   SenseOutput_Current();
+  
+  // Classical Perturb & Obserb Algorithm
 
   SENSE_POWER = SENSE_VOLT * SENSE_CURR;
   DELTA_POWER = SENSE_POWER - POWER_PREV;
