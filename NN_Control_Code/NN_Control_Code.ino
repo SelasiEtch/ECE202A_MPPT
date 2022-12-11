@@ -5,17 +5,16 @@
 
 #define PWM_PIN               12
 #define DIRECTION_PIN        11
-//#define PWM_FREQUENCY         31000
-#define PWM_FREQUENCY         10000
+#define PWM_FREQUENCY         31000
 #define ADC_RES               1024
 #define ADC_REF               3.3
-//#define FB_RATIO_VOLT         0.25
 #define FB_RATIO_VOLT         0.16
 #define FB_RATIO_CURR         0.8
 // A0 is current Sensing Pin
 // A3 is Output Voltage Sensing
 // A2 is input voltage sensing
 // A1 is pot sensing pin 
+
 uint8_t sense[5];
 float irr_est;
 float POT_VOLT = 0;
@@ -43,44 +42,56 @@ float SENSE_TEMP;
 
 void setup() 
 {
+  //Setup for AMG8833 IR Temp Sensor
   Temp_Setup();
 
+// Setting Sensing Pins as Inputs and Control Pins as Outputs
   pinMode(PWM_PIN, OUTPUT);
   pinMode(DIRECTION_PIN, OUTPUT);
   pinMode(A0,INPUT);
   pinMode(A1,INPUT);
   pinMode(A3, INPUT);
 
+
+// Direction Pin dictates transistors to operate in Motor Driver
   digitalWrite(DIRECTION_PIN, HIGH);
+
+// Initialize 31kHz PWM with 10% duty cycle ratio
   pwmPin.period( 1.0 / PWM_FREQUENCY );
   pwmPin.write( 0.1 );
   Serial.begin(115200);
   myPID.SetMode(AUTOMATIC);
 
+// Initial PID Setpoint
   Setpoint = 3;
 }
 
 void loop() 
 {
+// Sensing Parameters are updated (PV Voltage, PV Current, and PV Temperature)
   SenseOutput_Voltage();
   SenseOutput_Current();
   Process_Temp_Pixels_Average();
-  
+
+// Packing data to be sent to MATLAB into array
   sense[0] = (uint8_t)SENSE_VOLT_PV;
   sense[1] = (uint8_t)SENSE_CURR;
   sense[2] = (uint8_t)SENSE_TEMP;
   sense[3] = (uint8_t)Output;
   sense[4] = (uint8_t)SENSE_VOLT_OUT;
 
+// Open Loop operation is observed by manually adjusting Buck Converter with potentiometer
 #ifndef CLOSED_LOOP
   sense[3] = (uint8_t)(DC * (225));
   UpdatePot_DC();
 #endif
 
 
+// Sending serial data over to NN Simulink Model
   Serial.write((uint8_t*)sense,sizeof(sense));
   Serial.write("\r\n");
 
+// Reading Irradiance Estimate back from NN Simulink Model and adjusting PID Setpoint Accordingly
 #ifdef CLOSED_LOOP
   while(Serial.available() == 0);
 
@@ -97,10 +108,10 @@ void loop()
   }
 #endif
 
-
   delay(100);
 }
 
+// Setup function for AMG8833 IR Temp Sensor
 void Temp_Setup()
 {
   bool status;
@@ -111,6 +122,7 @@ void Temp_Setup()
   }
 }
 
+// Processing function for AMG8833 IR Temp Sensor, averages out temperatures of all pixels in the camera feed
 void Process_Temp_Pixels_Average()
 {
   //Update Pixel Array
@@ -123,6 +135,7 @@ void Process_Temp_Pixels_Average()
   SENSE_TEMP = SENSE_TEMP / (AMG88xx_PIXEL_ARRAY_SIZE);
 }
 
+// Sensing PV Input Voltage and Buck Converter Output Voltage + Neccesary conditioning for transfer to Simulink
 void SenseOutput_Voltage()
 {
   SENSE_VOLT_OUT = analogRead(A3);
@@ -134,6 +147,7 @@ void SenseOutput_Voltage()
   sense_v_loop = (sense_v_loop / FB_RATIO_VOLT);
 }
 
+// Sensing PV Input Current + Neccesary conditioning for transfer to Simulink
 void SenseOutput_Current()
 {
   SENSE_CURR = analogRead(A0);
@@ -143,6 +157,7 @@ void SenseOutput_Current()
   sense_i_loop = sense_i_loop / FB_RATIO_CURR;
 }
 
+// Open-loop function to adjust Buck Converter with potentiometer
 void UpdatePot_DC()
 {
   POT_VOLT = analogRead(A1);
@@ -150,6 +165,7 @@ void UpdatePot_DC()
   pwmPin.write(DC);
 }
 
+// Function to update converter duty cycle based on PID output
 void UpdatePID()
 {
   Input = sense_i_loop; // Loop closed on current measurement
@@ -158,6 +174,7 @@ void UpdatePID()
   pwmPin.write(DC);
 }
 
+// Function to calculate Maximum Power Current with NN irradiance estimate and sensed temperature
 float calculate_Imp(double irr_est, double Temp)
 {
   float Imp_ref = 0.35;
@@ -169,6 +186,7 @@ float calculate_Imp(double irr_est, double Temp)
   return imp;
 }
 
+// Function to calculate Maximum Power Voltage with sensed temperature
 float calculate_Vmp(double Temp)
 {
   float beta_T = -0.0118;
